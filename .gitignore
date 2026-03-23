@@ -1,0 +1,11 @@
+# Ambiente Virtual Python
+.venv/
+venv/
+__pycache__/
+
+# Arquivos de Dados Grandes
+creditcard.csv
+transactions.db
+
+# Ignorar pastas de sistema
+.DS_Store

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Transações</title>
+    <!-- Google Fonts para tipografia premium -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <header class="header">
+            <div class="logo">
+                <span class="shield-icon">🛡️</span>
+                <h1>Detecta<span class="highlight">Fraude</span></h1>
+            </div>
+            <div class="user-profile">
+                <div class="avatar">👨‍💻</div>
+                <span>Painel Analítico</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="glass-panel summary-cards">
+                <div class="card">
+                    <div class="card-icon blue">📊</div>
+                    <div class="card-content">
+                        <h3>Total Analisadas</h3>
+                        <p id="total-transacoes" class="metric">Carregando...</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon green">✅</div>
+                    <div class="card-content">
+                        <h3>Legítimas</h3>
+                        <p id="total-legitimas" class="metric">Carregando...</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon red">🚨</div>
+                    <div class="card-content">
+                        <h3>Fraudes Detectadas</h3>
+                        <p id="total-fraudes" class="metric text-danger">Carregando...</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon purple">💰</div>
+                    <div class="card-content">
+                        <h3>Valor em Fraudes</h3>
+                        <p id="valor-fraudes" class="metric">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Tabela de Transações -->
+                <div class="glass-panel transactions-section">
+                    <div class="section-header">
+                        <h2>📋 Fluxo de Transações</h2>
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="Todas">Todas</button>
+                            <button class="filter-btn" data-filter="Fraudes">Fraudes</button>
+                            <button class="filter-btn" data-filter="Legítimas">Legítimas</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Tempo (s)</th>
+                                    <th>Valor ($)</th>
+                                    <th>Classificação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-body">
+                                <!-- Dados inseridos via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <button id="prev-page" class="nav-btn" disabled>← Anterior</button>
+                        <span id="page-info">Página 1</span>
+                        <button id="next-page" class="nav-btn">Próxima →</button>
+                    </div>
+                </div>
+
+                <!-- Gráfico -->
+                <div class="glass-panel charts-section">
+                    <h2>📊 Distribuição Geral</h2>
+                    <div class="chart-container">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
