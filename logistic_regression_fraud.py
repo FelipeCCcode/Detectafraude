@@ -1,9 +1,16 @@
+import os
 import pandas as pd
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import warnings
+
+# Força 1 thread para evitar deadlocks / travamentos em Windows com joblib/BLAS/MKL
+os.environ.setdefault('OMP_NUM_THREADS', '1')
+os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
+os.environ.setdefault('MKL_NUM_THREADS', '1')
+os.environ.setdefault('NUMEXPR_NUM_THREADS', '1')
 
 warnings.filterwarnings('ignore')
 
@@ -38,23 +45,22 @@ def main():
     # Utilizamos class_weight='balanced' pois a base de fraudes normalmente é muito desbalanceada
     log_reg = LogisticRegression(max_iter=1000, random_state=42)
 
-    # Grade de hiperparâmetros para buscar a melhor acurácia
+    # Grade de hiperparâmetros otimizada para rodar muito mais rápido
     param_dist = {
-        'C': [0.001, 0.01, 0.1, 1, 10, 100],  # Inverso da força de regularização
-        'penalty': ['l1', 'l2'],             # Tipos de penalidade
-        'solver': ['liblinear', 'saga']      # Solvers que suportam l1 e l2
+        'C': [0.01, 0.1, 1, 10],             # Inverso da força de regularização reduzido
+        'penalty': ['l2'],                   # Apenas L2 para garantir compatibilidade e rapidez
+        'solver': ['liblinear', 'lbfgs']     # Solvers substancialmente mais rápidos que o 'saga'
     }
 
-    # Utilizamos RandomizedSearchCV para otimizar os hiperparâmetros (é mais rápido que GridSearchCV)
-    # A métrica de avaliação ('scoring') é a acurácia, conforme solicitado
+    # Utilizamos RandomizedSearchCV para otimizar os hiperparâmetros
     search = RandomizedSearchCV(
         log_reg, 
         param_distributions=param_dist, 
-        n_iter=5,             # Número de combinações a testar
+        n_iter=4,             # Número de combinações a testar
         scoring='accuracy',   # Focando na melhor acurácia
         cv=3,                 # Validação cruzada com 3 folds
         random_state=42, 
-        n_jobs=-1,            # Usa todos os núcleos do processador disponíveis
+        n_jobs=1,             # n_jobs=1 evita problemas de travamento no Windows (Joblib)
         verbose=1
     )
 

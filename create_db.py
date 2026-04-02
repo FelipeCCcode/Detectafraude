@@ -3,17 +3,18 @@ import pandas as pd
 import os
 
 def create_database():
-    csv_file = 'creditcard.csv'
-    db_file = 'transactions.db'
-    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_file = os.path.join(script_dir, 'creditcard_sample.csv')
+    db_file = os.path.join(script_dir, 'transactions.db')
+
     if not os.path.exists(csv_file):
-        print(f"Erro: Arquivo '{csv_file}' não encontrado.")
+        print(f"Erro: Arquivo '{csv_file}' não encontrado. Verifique se o arquivo está na mesma pasta do script.")
         return
 
     print(f"Lendo '{csv_file}'... Isso pode demorar alguns segundos.")
     try:
-        # Lê o CSV
-        df = pd.read_csv(csv_file)
+        # Lê o CSV de forma robusta, mesmo com possíveis separadores ou aspas
+        df = pd.read_csv(csv_file, sep=',', quotechar='"', low_memory=False)
         
         # Limpa os nomes das colunas
         df.columns = df.columns.str.replace('"', '').str.strip()
