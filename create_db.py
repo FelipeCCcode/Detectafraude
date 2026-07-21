@@ -4,7 +4,8 @@ import os
 
 def create_database():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_file = os.path.join(script_dir, 'creditcard_sample.csv')
+    dataset_name = 'creditcard.csv' if os.path.exists(os.path.join(script_dir, 'creditcard.csv')) else 'creditcard_sample.csv'
+    csv_file = os.path.join(script_dir, dataset_name)
     db_file = os.path.join(script_dir, 'transactions.db')
 
     if not os.path.exists(csv_file):
@@ -13,20 +14,20 @@ def create_database():
 
     print(f"Lendo '{csv_file}'... Isso pode demorar alguns segundos.")
     try:
-        # Lê o CSV de forma robusta, mesmo com possíveis separadores ou aspas
+        #lê o CSV de forma robusta, mesmo com possiveis separadores ou aspas
         df = pd.read_csv(csv_file, sep=',', quotechar='"', low_memory=False)
         
-        # Limpa os nomes das colunas
+        #limpa os nomes das colunas
         df.columns = df.columns.str.replace('"', '').str.strip()
         
-        # Limpa a coluna Class se for texto
+        #limpa a coluna Class se for texto
         if df['Class'].dtype == object:
             df['Class'] = df['Class'].str.replace('"', '').astype(int)
             
         print(f"Criando o banco de dados '{db_file}'...")
         conn = sqlite3.connect(db_file)
         
-        # Filtra as colunas que importam para a visualização
+        #filtra as colunas que importam para a visualização
         cols_to_keep = []
         if 'Time' in df.columns:
             cols_to_keep.append('Time')
@@ -36,10 +37,10 @@ def create_database():
         
         df_db = df[cols_to_keep].copy()
         
-        # Adiciona rótulos para facilitar a leitura no app
+        #adiciona rótulos para facilitar a leitura no app
         df_db['is_fraud'] = df_db['Class'].apply(lambda x: "Fraude" if x == 1 else "Legítima")
         
-        # Salva o DataFrame no SQLite
+        #salva o DataFrame no SQLite
         df_db.to_sql('transactions', conn, if_exists='replace', index=False)
         conn.close()
         print(f"Banco de dados '{db_file}' criado com sucesso com {len(df_db)} registros!")
