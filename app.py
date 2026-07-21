@@ -4,7 +4,8 @@ import pandas as pd
 import os
 
 app = Flask(__name__)
-DB_PATH = 'transactions.db'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(script_dir, 'transactions.db')
 
 def get_db_connection():
     if not os.path.exists(DB_PATH):
