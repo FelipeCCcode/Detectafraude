@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import warnings
 
-# Força 1 thread para evitar deadlocks / travamentos em Windows com joblib/BLAS/MKL
+# limitação de threads para evitar deadlocks de execução paralela no windows (joblib/openblas)
 os.environ.setdefault('OMP_NUM_THREADS', '1')
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 os.environ.setdefault('MKL_NUM_THREADS', '1')
@@ -15,75 +15,66 @@ os.environ.setdefault('NUMEXPR_NUM_THREADS', '1')
 warnings.filterwarnings('ignore')
 
 def main():
-    print("Carregando os dados...")
-    # Lê o dataset
-    df = pd.read_csv('creditcard_sample.csv')
+    # selecao do dataset (prioriza a base completa se disponivel)
+    dataset_file = 'creditcard.csv' if os.path.exists('creditcard.csv') else 'creditcard_sample.csv'
+    df = pd.read_csv(dataset_file)
     
-    # Caso as colunas tenham aspas no nome (como visto no Get-Content)
+    # tratamento nos nomes das colunas
     df.columns = df.columns.str.replace('"', '').str.strip()
 
-    print("Pré-processando os dados...")
-    # Se a coluna 'Class' foi lida como string contendo aspas, removemos
+    # conversao do tipo da variavel alvo
     if df['Class'].dtype == object:
         df['Class'] = df['Class'].str.replace('"', '').astype(int)
 
-    # Separação entre features (X) e a variável alvo (y)
+    # separacao das features e do target
     X = df.drop('Class', axis=1)
     y = df['Class']
 
-    # Padronização dos dados (Importante para a Regressão Logística convergir corretamente)
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    # Divisão em conjuntos de treino e teste (mantendo a proporção de fraudes com stratify=y)
+    # divisao treino/teste mantendo a proporção de classes (stratify)
     X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.2, random_state=42, stratify=y
+        X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    print("Configurando a Regressão Logística e a busca de hiperparâmetros...")
-    # Define o modelo
-    # Utilizamos class_weight='balanced' pois a base de fraudes normalmente é muito desbalanceada
-    log_reg = LogisticRegression(max_iter=1000, random_state=42)
+    # padronizacao das features apos o split para evitar data leakage
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
-    # Grade de hiperparâmetros otimizada para rodar muito mais rápido
+    # regressao logistica com ponderacao de peso por classe
+    log_reg = LogisticRegression(class_weight='balanced', max_iter=1000, random_state=42)
+
+    # espaco de busca de hiperparametros
     param_dist = {
-        'C': [0.01, 0.1, 1, 10],             # Inverso da força de regularização reduzido
-        'penalty': ['l2'],                   # Apenas L2 para garantir compatibilidade e rapidez
-        'solver': ['liblinear', 'lbfgs']     # Solvers substancialmente mais rápidos que o 'saga'
+        'C': [0.01, 0.1, 1, 10],
+        'penalty': ['l2'],
+        'solver': ['liblinear', 'lbfgs']
     }
 
-    # Utilizamos RandomizedSearchCV para otimizar os hiperparâmetros
+    # otimizacao via randomized search com foco em f1-score
     search = RandomizedSearchCV(
         log_reg, 
         param_distributions=param_dist, 
-        n_iter=4,             # Número de combinações a testar
-        scoring='accuracy',   # Focando na melhor acurácia
-        cv=3,                 # Validação cruzada com 3 folds
+        n_iter=4,
+        scoring='f1',
+        cv=3,
         random_state=42, 
-        n_jobs=1,             # n_jobs=1 evita problemas de travamento no Windows (Joblib)
-        verbose=1
+        n_jobs=1,
+        verbose=0
     )
 
-    print("Iniciando o treinamento e ajuste... Isso pode levar alguns minutos devido ao tamanho do dataset.")
-    search.fit(X_train, y_train)
+    search.fit(X_train_scaled, y_train)
 
-    print("\n================ RESULTADOS ================")
-    print("\nTreinamento concluído!")
-    print(f"Melhores hiperparâmetros encontrados: {search.best_params_}")
-    
-    # Avaliando o melhor modelo no conjunto de teste
+    # avaliacao no conjunto de teste
     best_model = search.best_estimator_
-    y_pred = best_model.predict(X_test)
+    y_pred = best_model.predict(X_test_scaled)
 
-    # Calculando a acurácia
     acc = accuracy_score(y_test, y_pred)
-    print(f"\nMelhor Acurácia no conjunto de teste: {acc:.4f} ({(acc*100):.2f}%)")
-    
-    # Exibindo métricas detalhadas (Precision, Recall, F1-Score)
-    print("\nRelatório de Classificação:")
-    print(classification_report(y_test, y_pred))
 
-    print("Matriz de Confusão:")
+    print(f"Melhores parametros: {search.best_params_}")
+    print(f"Acuracia teste: {acc:.4f}\n")
+    print("Relatorio de Classificacao:")
+    print(classification_report(y_test, y_pred))
+    print("Matriz de Confusao:")
     print(confusion_matrix(y_test, y_pred))
 
 if __name__ == '__main__':
